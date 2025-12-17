@@ -6,6 +6,8 @@ lojas = [
     {
         "id": 1,
         "nome": "Loja A",
+        "cidade": "Marica",
+        "imagem"
         "items": [
             {
                 "id": "loja-a-1",
@@ -227,6 +229,52 @@ def atualizar_item(id_loja, id_item):
                     }, 200
 
     return jsonify({"error": "Loja não encontrada"}), 404
+
+@app.get('/loja/pesquisa/<key>/<value>')
+@app.post('/loja/pesquisa')
+def pesquisar(key, value):
+
+    for loja in lojas: 
+       if value in loja[key]:
+            return jsonify({"loja":  loja}), 200
+
+    return jsonify({"Erro": "Loja não encontrar"}), 404
+
+
+@app.get('/header_request')
+def verificar_cliente():
+    agente = request.headers.get('User-agent')
+    host = request.headers.get('Host')
+    content_type= request.headers.get("Content-type")
+    token_autenticacao =  request.headers.get("Autorization")
+    cokies = request.headers.get('Cookies')
+
+
+    return jsonify({
+        "User-agent": agente,
+        "Host": host,
+        "Content-type": content_type,
+        "Autorization": token_autenticacao
+    }), 200
+
+
+@app.get('/request/<param>')
+def verificar_request(param):
+
+    return jsonify(
+        {
+            "path": request.path,
+            "url_completa": request.url,
+            "base_url": request.base_url,
+            "endpoint": request.endpoint,
+            "metodo": request.method,
+            "query_parametro": dict(request.args),
+            "path_completo": request.full_path,
+            "parametro": param
+
+        }
+    )
+
 
 
 if __name__ == "__main__":

@@ -1,4 +1,6 @@
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, send_from_directory
+from werkzeug.utils import secure_filename
+import os
 
 app = Flask(__name__)
 
@@ -7,7 +9,7 @@ lojas = [
         "id": 1,
         "nome": "Loja A",
         "cidade": "Marica",
-        "imagem"
+        "imagem" : None,
         "items": [
             {
                 "id": "loja-a-1",
@@ -24,6 +26,7 @@ lojas = [
     {
         "id": 2,
         "nome": "Loja B",
+        "imagem" : None,
         "items": [
             {
                 "id": "loja-b-1",
@@ -44,6 +47,9 @@ lojas = [
     }
 ]
 
+UPLOAD_FOLDER = 'uploads'
+ALLOWED = {'jpg', 'png', 'jpeg', 'gif', 'webp'}
+MAX_SIZE = 6 * 1024 * 1024 #6MB
 
 ### Endpoint de lojas
 
@@ -231,7 +237,7 @@ def atualizar_item(id_loja, id_item):
     return jsonify({"error": "Loja não encontrada"}), 404
 
 @app.get('/loja/pesquisa/<key>/<value>')
-@app.post('/loja/pesquisa')
+@app.post('/loja/pesquisa/<key>/<value>')
 def pesquisar(key, value):
 
     for loja in lojas: 
@@ -275,6 +281,58 @@ def verificar_request(param):
         }
     )
 
+
+def verify_extension(filename): 
+    ext = filename.rsplit('.', 1)[1].lower()
+    if ext in ALLOWED:
+         return True
+    return False
+
+@app.post('/loja/<int:id_loja>/upload_foto')
+def upload_foto(id_loja):
+
+    my_image = request.files['arquivo']
+   
+    verify_extension(my_image.filename)
+    
+    # Se na loja tive uma iamgem, preciso tratar 
+
+    for loja in lojas:
+        if loja['id'] == id_loja:
+
+            ext = my_image.filename.rsplit('.', 1)[1].lower()
+            nome = secure_filename(f"loja_{id_loja}_image.{ext}")
+
+            caminho = os.path.join(UPLOAD_FOLDER, nome)
+            #quando o caminho ou pasta não existir criar
+
+            my_image.save(caminho)
+
+            loja['imagem'] = nome
+
+            return jsonify({
+                "message": "Imagem enviada com sucesso",
+                "arquivo": nome,
+                "caminho": caminho,
+                "url": f"http://{request.host}/uploads/{nome}",
+                "loja": loja
+            }), 201
+
+
+@app.get('/uploads/<filename>')
+def get_image(filename):
+    return send_from_directory(UPLOAD_FOLDER, filename)
+
+
+
+    #Delete image
+    #Upload image 
+
+    return jsonify({
+        "Erro": "Loja não encontrada"
+    }), 404
+            
+               
 
 
 if __name__ == "__main__":

@@ -1,0 +1,2 @@
+lojas = { }
+items = { }

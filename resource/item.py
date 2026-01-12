@@ -1,6 +1,6 @@
 from flask_smorest import Blueprint, abort
 from flask.views import MethodView
-from flask import jsonify
+from flask import jsonify, request
 from db import items
 import uuid
 
@@ -47,5 +47,22 @@ class ItemId(MethodView):
             return jsonify({"message": "Item removido com sucesso"})
         except KeyError: 
             abort(404, message= "Item não encontrado")
+
+    def patch(self, id_item):
+        if id_item not in items:
+            abort(404, message="Item não encontrado")
+
+        dados_item = request.get_json(silent=True)
+
+        if not isinstance(dados_item, dict) or len(dados_item) == 0:
+            abort(400, message="Dados inválidos, nenhum campo enviado para atualização!")
+
+        if "id" in dados_item and dados_item["id"] != id_item:
+            abort(400, message="Operação não permitida, não é permitido atualizar o id do item")
+
+        dados_item.pop("id", None)
+        items[id_item].update(dados_item)
+
+        return jsonify({"item atualizado": items[id_item]}), 200
 
     

@@ -1,12 +1,15 @@
 from flask_smorest import Blueprint, abort
 from flask.views import MethodView
 from flask import jsonify, request
-from db import items
+
 import uuid
+
+from db import db
+from models.item import ItemModel
 
 item_blp= Blueprint("Item", __name__, description="Operações de item")
 
-
+items = {}
 @item_blp.route('/item')
 class Item(MethodView):
 

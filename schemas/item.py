@@ -1,10 +1,7 @@
 from marshmallow import Schema, fields
+from schemas.plain import PlainItemSchemas
 
-
-class ItemSchema(Schema):
-	id = fields.Str(required=False)
-	nome = fields.Str(required=True)
-	preco = fields.Float(required=True)
+class ItemSchema(PlainItemSchemas):
 	loja_id = fields.Str(required=True)
 
 

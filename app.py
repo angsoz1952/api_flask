@@ -2,8 +2,9 @@ from flask import Flask
 from flask_smorest import Api
 from resource.loja import loja_blp
 from resource.item import item_blp
+from resource.tag import tag_blp
 from db import db
-from models import LojaModel, ItemModel 
+from models import LojaModel, ItemModel, ItemModel, ItemTagModel
 import os
 
 def create_app(db_url=None): 
@@ -14,7 +15,7 @@ def create_app(db_url=None):
     app.config["API_VERSION"] = "v1"
     app.config["OPENAPI_VERSION"] = "3.0.3"
     app.config["OPENAPI_URL_PREFIX"] = "/"
-    app.config["OPENAPI_SWAGGER_UI_PATH"] = "/swagger-ui"
+    app.config["OPENAPI_SWAGGER_UI_PATH"] = "/docs"
     app.config["OPENAPI_SWAGGER_UI_URL"] = "https://cdn.jsdelivr.net/npm/swagger-ui-dist/"
     
     app.config["SQLALCHEMY_DATABASE_URI"] = db_url or os.getenv("DATABASE_URL", "sqlite:///data.db")
@@ -26,6 +27,7 @@ def create_app(db_url=None):
 
     api.register_blueprint(loja_blp)
     api.register_blueprint(item_blp)
+    api.register_blueprint(tag_blp)
 
     with app.app_context():
         db.create_all()

@@ -1,71 +1,84 @@
 from flask_smorest import Blueprint, abort
 from flask.views import MethodView
-from flask import jsonify, request
-
-import uuid
 
 from db import db
 from models.item import ItemModel
+from schemas.item import ItemSchema, ItemSchemaUpdate
 
-item_blp= Blueprint("Item", __name__, description="Operações de item")
+from sqlalchemy.exc import SQLAlchemyError
 
-items = {}
+item_blp = Blueprint("Item", __name__, description="Operações de item")
+
+
 @item_blp.route('/item')
 class Item(MethodView):
 
+    @item_blp.response(200, ItemSchema(many=True))
     def get(self): 
-        return jsonify({"Itens":  list(items.values())}), 200
+        return ItemModel.query.all()
 
+    @item_blp.arguments(ItemSchema)
+    @item_blp.response(201, ItemSchema)
     def post(self, item_dado): 
-         
-        item_id = uuid.uuid4().hex
+        item = ItemModel(**item_dado)
+        
+        try:
+            db.session.add(item)
+            db.session.commit()
+        except SQLAlchemyError:
+            db.session.rollback()
+            abort(500, message="Erro ao criar item")
 
-        item_novo = {**item_dado, "id":item_id}
-
-        items[item_id] = item_novo
-
-        return jsonify(item_novo), 201
+        return item
     
-@item_blp.route('/item/<string:id_item>')
+
+@item_blp.route('/item/<int:id_item>')
 class ItemId(MethodView):
 
+    @item_blp.response(200, ItemSchema)
     def get(self, id_item):
-        try: 
-            return jsonify(items[id_item])
-        except KeyError: 
-            abort(404, message="Item não encontrado")
+        return ItemModel.query.get_or_404(id_item)
 
+    @item_blp.arguments(ItemSchemaUpdate)
+    @item_blp.response(200, ItemSchema)
     def put(self, dado, id_item):
+        item = ItemModel.query.get_or_404(id_item)
         
-        for item in items.values():
-            if item['id'] == id_item:
-                item.update(dado)
-                return jsonify({"item atualizado": item}), 200
+        item.nome = dado.get("nome", item.nome)
+        item.preco = dado.get("preco", item.preco)
+        
+        try:
+            db.session.commit()
+        except SQLAlchemyError:
+            db.session.rollback()
+            abort(500, message="Erro ao atualizar item")
 
-        return jsonify({"error": "Item não encontrado"}), 404
+        return item
 
     def delete(self, id_item):
-        try: 
-            items.pop(id_item)
-            return jsonify({"message": "Item removido com sucesso"})
-        except KeyError: 
-            abort(404, message= "Item não encontrado")
+        item = ItemModel.query.get_or_404(id_item)
+        
+        db.session.delete(item)
+        db.session.commit()
+        
+        return {"message": "Item removido com sucesso"}
 
-    def patch(self, id_item):
-        if id_item not in items:
-            abort(404, message="Item não encontrado")
+    @item_blp.arguments(ItemSchemaUpdate)
+    @item_blp.response(200, ItemSchema)
+    def patch(self, dados_item, id_item):
+        item = ItemModel.query.get_or_404(id_item)
 
-        dados_item = request.get_json(silent=True)
+        if dados_item.get("nome"):
+            item.nome = dados_item["nome"]
+        if dados_item.get("preco"):
+            item.preco = dados_item["preco"]
 
-        if not isinstance(dados_item, dict) or len(dados_item) == 0:
-            abort(400, message="Dados inválidos, nenhum campo enviado para atualização!")
+        try:
+            db.session.commit()
+        except SQLAlchemyError:
+            db.session.rollback()
+            abort(500, message="Erro ao atualizar item")
 
-        if "id" in dados_item and dados_item["id"] != id_item:
-            abort(400, message="Operação não permitida, não é permitido atualizar o id do item")
-
-        dados_item.pop("id", None)
-        items[id_item].update(dados_item)
-
-        return jsonify({"item atualizado": items[id_item]}), 200
+        return item
 
     

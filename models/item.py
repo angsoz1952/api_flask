@@ -8,5 +8,9 @@ class ItemModel(db.Model):
     nome = db.Column(db.String, unique=True, nullable=False)
     preco = db.Column(db.Float(precision=2), unique=False, nullable=False)
     loja_id = db.Column(db.Integer, db.ForeignKey('lojas.id'), unique=False,  nullable=False)
+    
 
     loja = db.relationship("LojaModel", back_populates="itens")
+
+    tags = db.relationship("TagModel", secondary="itens_tags", back_populates="itens", passive_deletes=True)
+
